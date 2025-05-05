@@ -43,9 +43,9 @@ To use this repository, you need:
 ### Usage
 1. Run the Docker container:
    ```bash
-   docker run -p 8080:8080 docker-novnc
+   docker run -p 6080:6080 docker-novnc
    ```
-2. Open your web browser and go to `http://localhost:8080`. You will see the GUI interface powered by noVNC.
+2. Open your web browser and go to `http://localhost:6080`. You will see the GUI interface powered by noVNC.
 
 ---
 
