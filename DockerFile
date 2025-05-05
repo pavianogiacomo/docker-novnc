@@ -1,0 +1,91 @@
+FROM alpine:3.21
+LABEL maintainer="Giacomo Paviano"
+LABEL version="1.0"
+LABEL description="Docker image NOVNC"
+
+# set timezone and localization
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_CTYPE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
+ENV TZ=Europe/Rome
+
+# Install dependencies
+RUN apk update && \
+    apk add --no-cache \
+    x11vnc \
+    xvfb \
+    git \
+    ca-certificates \
+    firefox-esr \
+    xterm \
+    bash \ 
+    vim \
+    tmux \
+    util-linux \
+    busybox \
+    busybox-extras \
+    tini \
+    tini-static \
+    sudo \
+    openssh-client \
+    rsync \
+    tcpdump \
+    wget \ 
+    curl \
+    setxkbmap \
+    putty \
+    xrdp \
+    freerdp \
+    freerdp-libs \ 
+    freerdp-plugins \
+    remmina \
+    gvfs \
+    gvfs-smb \
+    xfce4 \
+    xfce4-session \
+    lightdm-gtk-greeter \
+    #xf86-input-synaptics \
+    #xf86-input-mouse \
+    #xf86-input-keyboard \
+    xauth \
+    dbus \
+    mesa-gl \
+    udev \
+    papirus-icon-theme \
+    openjdk21-jre \
+    tzdata \
+    supervisor \
+    lightdm 
+
+RUN for ic in $(find /usr/share/icons/* -type d -maxdepth 0); \
+    do \
+        gtk-update-icon-cache -ft $ic; \
+    done
+
+
+RUN git clone https://github.com/novnc/noVNC.git /opt/novnc && \
+    git clone https://github.com/novnc/websockify /opt/novnc/utils/websockify
+
+RUN mkdir ~/.vnc && x11vnc -storepasswd 1234 ~/.vnc/passwd
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN rm -rf /var/cache/apk/* /tmp/* /root/.cache
+RUN xrdp-keygen xrdp auto
+RUN sed -i '/TerminalServerUsers/d' /etc/xrdp/sesman.ini  
+RUN sed -i '/TerminalServerAdmins/d' /etc/xrdp/sesman.ini   
+RUN sed -i -e 's/\/ash/\/bash/g' /etc/passwd 
+RUN echo "export DISPLAY=:1" >> /root/.bashrc
+RUN touch /root/Desktop/firefox.desktop && cp /usr/share/applications/firefox-esr.desktop /root/Desktop/firefox.desktop
+RUN cp /usr/share/applications/org.remmina.Remmina.desktop /root/Desktop/org.remmina.Remmina.desktop
+# RUN for f in /root/Desktop/*.desktop; do \
+#     if [ -f "$f" ]; then \
+#         if ! gio info "$f" | grep metadata::xfce-exe-checksum > /dev/null 2>&1; then \
+#             chmod +x "$f"; \
+#             gio set -t string "$f" metadata::xfce-exe-checksum "$(sha256sum "$f" | awk '{print $1}')"; \
+#         fi; \
+#     fi; \
+# done
+
+
+EXPOSE 6080
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
